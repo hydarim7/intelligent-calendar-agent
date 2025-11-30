@@ -4,7 +4,7 @@ import datetime
 import time
 import threading
 BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
-API_KEY = "ebf3ceac853c29bd98273c13a2146f22"
+API_KEY = ""
 
 
 class weatherReminder():
