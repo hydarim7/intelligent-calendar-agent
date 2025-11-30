@@ -287,7 +287,7 @@ See the Personal AI Agent in action via the ADK Developer UI.
 ### 1. Seamless Calendar Management
 The agent acts as a direct interface to Google Calendar. It can retrieve your schedule to answer questions about availability and instantly book new specific appointments.
 
-![UPCOMING_AND_ADD_THE_MEETING](screenshoots/UPCOMING_AND_ADD_THE_MEETING.jpeg)
+![UPCOMING_AND_ADD_THE_MEETING](screenshoots/UPCOMING_AND_ADD_THE_MEETING.png)
 *In this example, the user asks for upcoming events. The agent triggers the `list_upcoming_events` tool to retrieve the data, then immediately processes a follow-up request to book a meeting using `Calendar`.*
 
 ### 2. Intelligent "Vague" Scheduling
@@ -301,3 +301,5 @@ The agent intelligently chains tools to answer questions. It identifies the user
 
 ![weather_this_week](screenshoots/weather_this_week.jpeg)
 *The agent executes a chain of thought: first running `get_location` to ensure context, followed by `get_forecast_summary` to present a structured, easy-to-read 5-day forecast.*
+![today_weather](screenshoots/today_weather.jpeg)
+
