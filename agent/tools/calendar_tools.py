@@ -102,13 +102,75 @@ def list_upcoming_events(max_results: int = 10) -> str:
     except Exception as e:
         return f"❌ Error fetching events: {str(e)}"
 
+def get_upcoming_events_raw(max_results: int=100):
+    """
+    Get raw event data (for internal use by conflict checking).
+    
+    Args:
+        max_results: Maximum number of events to return
+    
+    Returns:
+        List of event dictionaries
+    """
+    try:
+        service = get_calendar_service()
+        now = datetime.datetime.now(datetime.UTC).isoformat()
 
+        events_result = service.events().list(
+            calendarId='primary',
+            timeMin=now,
+            maxResults=max_results,
+            singleEvents=True,
+            orderBy='startTime'
+        ).execute()
+
+        return events_result.get('items', [])
+    
+    except Exception as e:
+        print(f"❌ Error fetching events: {str(e)}")
+        return []
+
+def conflict_calendar(event_new):
+    """
+    Find conflict events with a new event.
+
+    Args:
+        event_new: New event dict with 'start' and 'end' keys containing 'dataTime'
+
+    Return:
+        List of conflicting events
+    """
+ 
+    overlap = []
+    events= get_upcoming_events_raw()
+
+    new_start = event_new['start']['dateTime']
+    new_end = event_new['end']['dateTime']
+
+    for ev in events:
+        # Get existing event times
+        ev_start = ev['start'].get('dateTime', ev['start'].get('date'))
+        ev_end = ev['end'].get('dateTime', ev['end'].get('date'))
+
+        if new_start < ev_end and new_end > ev_start:  
+            overlap.append({
+                'summary': ev.get('summary', 'No title'),
+                'start': ev_start,
+                'end': ev_end
+            })
+    
+    print(f"Found {len(overlap)} conflicting events")
+    return overlap
+    
+
+    
 def create_calendar_event(
     summary: str,
     start_time: str,
     end_time: str,
     description: str = "",
-    location: str = ""
+    location: str = "",
+    force_create: bool = False
 ) -> str:
     """
     Create a new event in user's Google Calendar.
@@ -117,6 +179,77 @@ def create_calendar_event(
         summary: Event title/summary
         start_time: Start time in ISO format (e.g., '2025-11-24T10:00:00+01:00')
         end_time: End time in ISO format (e.g., '2025-11-24T11:00:00+01:00')
+        description: Event description (optional)
+        location: Event location (optional)
+        force_create: If True, create event even if conflicts exist
+    
+    Returns:
+        Confirmation message with event details or conflict warning
+    """
+    try:
+        service = get_calendar_service()
+        
+        event = {
+            'summary': summary,
+            'start': {'dateTime': start_time},
+            'end': {'dateTime': end_time},
+        }
+        
+        if not force_create:
+            has_conflict = conflict_calendar(event)
+
+            if len(has_conflict) > 0:
+                conflict_msg = "⚠️ **Time Conflict Detected!**\n\n"
+                conflict_msg += f"Your new event '{summary}' conflicts with:\n\n"
+                
+                for i, conf in enumerate(has_conflict, 1):
+                    conflict_msg += f"{i}. {conf['summary']}\n"
+                    conflict_msg += f"   Time: {conf['start']} to {conf['end']}\n\n"
+                
+                conflict_msg += "Would you still like to add this event? (Reply 'yes' to confirm)"
+                return conflict_msg
+
+        if len(has_conflict)>0:
+            return "Confliction"
+        else:
+            if description:
+                event['description'] = description
+            if location:
+                event['location'] = location
+            
+            created_event = service.events().insert(
+                calendarId='primary',
+                body=event
+            ).execute()
+            
+            return (
+                f"✅ Event created successfully!\n\n"
+                f"Title: {summary}\n"
+                f"Start: {start_time}\n"
+                f"End: {end_time}\n"
+                f"Event Link: {created_event.get('htmlLink', 'N/A')}"
+            )
+        
+    except Exception as e:
+        return f"❌ Error creating event: {str(e)}"
+
+
+def force_create_event(
+    summary: str,
+    start_time: str,
+    end_time: str,
+    description: str = "",
+    location: str = ""
+) -> str:
+    """
+    Force create an event even if there are conflicts.
+    Use this ONLY when the user explicitly confirms they want to create 
+    an event despite time conflicts.
+    
+    Args:
+        summary: Event title/summary
+        start_time: Start time in ISO format
+        end_time: End time in ISO format
         description: Event description (optional)
         location: Event location (optional)
     
@@ -143,17 +276,16 @@ def create_calendar_event(
         ).execute()
         
         return (
-            f"✅ Event created successfully!\n\n"
+            f"✅ Event created successfully (despite conflicts)!\n\n"
             f"Title: {summary}\n"
             f"Start: {start_time}\n"
             f"End: {end_time}\n"
             f"Event Link: {created_event.get('htmlLink', 'N/A')}"
         )
-    
+        
     except Exception as e:
         return f"❌ Error creating event: {str(e)}"
-
-
+    
 def create_meeting_with_attendees(
     summary: str,
     start_time: str,

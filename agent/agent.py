@@ -23,7 +23,8 @@ from agent.tools.calendar_tools import (
     search_events,
     create_meeting_with_attendees,
     check_free_busy,
-    find_meeting_slots
+    find_meeting_slots,
+    force_create_event
 )
 
 # Import your new intelligent prompt tools
@@ -37,13 +38,7 @@ from agent.tools.prompt_tools import (
 from agent.tools.weather_tools import (
     get_location,
     get_current_weather,
-    start_weather_reminder, 
-    stop_weather_reminder,
-    scheduler, 
-    start_weather_reminder, 
-    stop_weather_reminder,
-    get_reminder_status
-)
+    get_forecast_summary)
 
 # Logging setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -65,10 +60,8 @@ tools = [
     FunctionTool(get_movable_events_from_calendar),
     FunctionTool(get_location),
     FunctionTool(get_current_weather),
-    FunctionTool(start_weather_reminder),
-    FunctionTool(stop_weather_reminder),
-    FunctionTool(get_reminder_status),
-    
+    FunctionTool(get_forecast_summary),
+    FunctionTool(force_create_event),
 ]
 
 # Rest of your agent code stays exactly the same...
@@ -110,7 +103,6 @@ def build_agent() -> Agent:
         generate_content_config=types.GenerateContentConfig(temperature=0.7),
     )
 
-    scheduler.start()
 
     return calendar_agent
 
@@ -126,6 +118,7 @@ if __name__ == "__main__":
     print("🗓️ Advanced Calendar Agent loaded successfully with ADK!")
     print("=" * 60)
     print("Agent capabilities:")
+    print("\n📅 Calendar Management:")
     print("  ✓ List upcoming events")
     print("  ✓ Create personal calendar events")
     print("  ✓ Schedule meetings with attendees (sends invitations)")
@@ -133,6 +126,13 @@ if __name__ == "__main__":
     print("  ✓ Find available meeting slots")
     print("  ✓ Add Google Meet links to meetings")
     print("  ✓ Search events by keyword")
+    print("  ✓ Conflict detection and override options")
+
+    print("\n🌤️ Weather Information:")
+    print("  ✓ Auto-detect location")
+    print("  ✓ Get current weather conditions")
+    print("  ✓ Get 1-5 day weather forecasts")
+
     print("  🧠 Smart natural language parsing")
     print("  📊 Calendar flexibility analysis")
     print("=" * 60)
